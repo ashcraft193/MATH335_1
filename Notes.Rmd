@@ -1,0 +1,65 @@
+---
+title: "Notes"
+author: "Christian Ashcraft"
+date: "May 1, 2019"
+output: 
+  html_document: 
+    keep_md: yes
+---
+
+
+
+Reading Notes
+
+#Chapter 5: Data Transformation
+
+dplyr basics
+
+types of variables
+* int - integers
+* dbl - doubles or real numbers
+* chr - character vectors, or strings
+* dttm - date-times
+* lgl - logical, or TRUE FALSE
+* fctr - factors that represent categorical variables with fixed  possible values
+
+Functions
+
+* Pick observations by their values (filter()).
+* Reorder the rows (arrange()).
+* Pick variables by their names (select()).
+* Create new variables with functions of existing variables (mutate()).
+* Collapse many values down to a single summary (summarise()).
+* Change the scope of each function from operating on the entire dataset to operating on it group-by-group (group_by()).
+
+How they work
+
+1. The first argument is a data frame.
+
+2. The subsequent arguments describe what to do with the data frame, using the variable names (without quotes).
+
+3. The result is a new data frame.
+
+use near() instead of ==
+
+& - and
+| - or
+! - not
+
+%in%
+nov_dec <- filter(flights, month %in% c(11, 12))
+
+!(x & y) is the same as !x | !y, and !(x | y) is the same as !x & !y
+
+
+NA
+is.na()
+
+filter() automatically filters out na values
+
+select() doesn't keep variables that aren't explicitly mentioned.
+rename() keeps all variables
+
+mutate() new data set with added columns based on formulas using other columns
+
+transmute() same as mutate() but new data set only has the new columns
