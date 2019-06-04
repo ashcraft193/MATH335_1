@@ -1,0 +1,75 @@
+---
+title: "Big Papas Monthly Report Draft"
+author: "Christian Ashcraft"
+date: "June 2, 2019"
+output: html_document
+keep_md: true 
+---
+
+
+```{r warning=FALSE}
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(readr)
+library(lubridate)
+```
+
+
+
+```{r}
+
+
+squ <- read.csv("data/May2019Sales.csv") %>% 
+  filter(Event.Type == "Payment", Gross.Sales != "$0.00")
+
+squ <- squ[c(-3,-6,-7,-8,-9,-15,-16,-17,-18,-19,-20,-21,-22,-23,-24)]
+squ$Gross.Sales <- parse_number(squ$Gross.Sales)
+squ$Tax <- parse_number(squ$Tax)
+squ$Time <- parse_time(squ$Time)
+squ$Date = parse_date(squ$Date, "%m/%d/%y")
+squ$datetime = make_datetime(year(squ$Date), month(squ$Date), day(squ$Date), hour(hms(squ$Time)), minute(hms(squ$Time)))
+#squ <- within(squ, { datetime=format(as.POSIXct(paste(Date, Time)), "%d/%m/%Y %H:%M:%S") })
+squ$Category <- gsub("Fry", "Fries", squ$Category)
+squ$Category <- gsub("None", "Toppings", squ$Category)
+squ$temp <- squ$Date
+squ <- squ %>% 
+  separate(temp, into = c("year", "month", "day"), sep = "-")
+```
+
+
+```{r}
+sort <- squ %>%
+  mutate(weekday = weekdays(Date)) %>% 
+  group_by(Date, weekday, Transaction.ID) %>% 
+  summarise(Gross.Sales = sum(Gross.Sales), Tax = sum(Tax), items = n(), starttime = min(Time), endtime = max(Time)) %>% 
+  group_by(Date, weekday) %>% 
+  summarise(gross = sum(Gross.Sales), tax = sum(Tax), sales = n(), starttime = min(starttime), endtime = max(endtime)) %>% 
+  filter(gross > 10) %>% 
+  mutate(
+    semester = case_when(
+      Date >= "2019-04-22" & Date <= "2019-07-23" ~ "Spring",
+      Date >= "2019-07-24" & Date <= "2019-09-15" ~ "Summer",
+      Date >= "2019-09-16" & Date <= "2019-12-18" ~ "Fall",
+      TRUE ~ "Break"
+    ),
+    salehours = as.numeric(round(abs(difftime(starttime, endtime)), 2)),
+    emphours = as.numeric(round(abs(difftime(starttime, endtime)), 2) + 1),
+    location = case_when(
+      weekday == "Friday" & as.character(starttime) >= "15:45" & as.character(endtime) <= "20:30" ~ "Rex Market",
+      TRUE ~ "Other"
+    ),
+    empneeded = case_when(
+      sales/as.numeric(salehours) < 12 ~ "2",
+      sales/as.numeric(salehours) < 18 ~ "3",
+      TRUE ~ "4"
+    ),
+    estpayroll8 = round(as.numeric(empneeded)*(as.numeric(salehours)+1)*8.8, 2),
+    estprodcost = round(.25*gross, 2),
+    estnet = round(gross - estpayroll8 - estprodcost - tax, 2),
+    avesale = round(gross/sales, 2), 
+    salesperhour = round(sales/as.numeric(emphours), 1)
+  ) %>% 
+  select(semester, Date, weekday, location, "Start" = starttime, "End" = endtime, sales, "Average.Sale" = avesale, "Net" = gross, tax, "Profit" = estnet, "Duration" = salehours, "Hourly.Sales" = salesperhour, "25%.Margin.Estimate" = estprodcost, "Employees.Needed" = empneeded, emphours, estpayroll8)
+```
+ 
